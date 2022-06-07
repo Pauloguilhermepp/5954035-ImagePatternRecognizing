@@ -38,6 +38,47 @@ public class K_Nearest implements PlugInFilter {
         search(dir);
     }
 
+    public static ImagePlus rbgToGrayScale(ImagePlus img){
+        ImageConverter ic = new ImageConverter(img);
+        ic.convertToGray8();
+        img.updateAndDraw();
+
+        return img;
+    }
+
+    public static void write(String content){
+        try {
+            FileWriter myWriter = new FileWriter("Debugger.txt", true);
+            myWriter.write(content + "\n");
+            myWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static int[] getHistogram(ImagePlus img){
+        String histString = "[";
+        int [] hist = new int[256];
+        int nx = img.getWidth(); 
+		int ny = img.getHeight();
+
+        for(int i = 0; i < nx; i++){
+            for(int j = 0; j < ny; j++){
+                hist[img.getPixel(i, j)[0]]++;
+            }
+        }
+        
+        for(int i = 0; i < 256; i++){
+            histString += Integer.toString(hist[i]) + ", ";
+        }
+
+        histString += "]";
+
+        write(histString);
+
+        return hist;
+    } 
+
     public void search(String dir) {
         IJ.log("");
         IJ.log("Searching images");
@@ -52,9 +93,11 @@ public class K_Nearest implements PlugInFilter {
             if (!f.isDirectory()) {
                 ImagePlus image = new Opener().openImage(dir, list[i]); /* abre imagem image */
                 if (image != null) {
-                image.show();
+                    image.show();
+                    
+                    image = rbgToGrayScale(image);
+                    getHistogram(image);
 
-                    // CODIGO
                 }
             }
         }
