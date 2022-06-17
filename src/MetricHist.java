@@ -44,16 +44,16 @@ public class MetricHist{
 
             if(Math.abs(aBin - aSum) > maxError){
                 double [] coefs = getCoef(start, hist[start], end, hist[end]);
-                double [] array = {coefs[0], coefs[1], start, end};
+                double [] array = {coefs[0], coefs[1], end};
                 this.data.add(array);
                 startNewBin = true;
             }
 
         }
 
-        if(this.data.get(this.data.size() - 1)[3] != 255){
+        if(this.data.get(this.data.size() - 1)[2] != 255){
             double [] coefs = getCoef(start, hist[start], 255, hist[255]);
-            double [] array = {coefs[0], coefs[1], start, 255};
+            double [] array = {coefs[0], coefs[1], 255};
             this.data.add(array);
         }
         
