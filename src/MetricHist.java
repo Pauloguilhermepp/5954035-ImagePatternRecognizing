@@ -2,7 +2,7 @@ import java.util.*;
 import java.io.*;
 public class MetricHist{
 
-    private double maxError = 200;
+    private double maxError = 2000;
     private Vector<double []> data = new Vector<double []>();
 
     public MetricHist(int[] hist){
@@ -84,14 +84,73 @@ public class MetricHist{
         }
     }
     
+    private static boolean inters(double x1, double x2, double a1, double b1, double a2, double b2){
+        if(a1 == a2){
+            return false;
+        }
+        double x = (b2 - b1) / (a1 - a2);
+
+        if(x1 < x && x < x2){
+            return true;
+        }
+
+        return false;
+
+    }
+    private static double trapDif(double b1, double b2, double h){
+        return Math.abs(b1 - b2) * h / 2;
+    }
+
+    public static double distance(MetricHist mh1, MetricHist mh2){
+        int p1 = 0, p2 = 0;
+        double distance = 0, b1, b2, x;
+
+        for(int i = 0; i < 255; i++){
+
+            if(mh1.data.get(p1)[2] == i){
+                p1++;
+            }
+
+            if(mh2.data.get(p2)[2] == i){
+                p2++;
+            }
+
+            if(inters(i, i+1, mh1.data.get(p1)[0], mh1.data.get(p1)[1], mh2.data.get(p2)[0], mh2.data.get(p2)[1])){
+                
+                x = (mh2.data.get(p2)[1] - mh1.data.get(p1)[1]) / (mh1.data.get(p1)[0] - mh2.data.get(p2)[0]);
+
+                b1 = (mh1.data.get(p1)[0] * i + mh1.data.get(p1)[1]) + (mh1.data.get(p1)[0] * x + mh1.data.get(p1)[1]);
+                b2 = (mh2.data.get(p2)[0] * i + mh2.data.get(p2)[1]) + (mh2.data.get(p2)[0] * x + mh2.data.get(p2)[1]);
+                
+                distance += trapDif(b1, b2, x - i);
+                
+                b1 = (mh1.data.get(p1)[0] * x + mh1.data.get(p1)[1]) + (mh1.data.get(p1)[0] * (i+1) + mh1.data.get(p1)[1]);
+                b2 = (mh2.data.get(p2)[0] * x + mh2.data.get(p2)[1]) + (mh2.data.get(p2)[0] * (i+1) + mh2.data.get(p2)[1]);
+
+                distance += trapDif(b1, b2, (i+1) - x);
+
+            }else{
+                b1 = (mh1.data.get(p1)[0] * i + mh1.data.get(p1)[1]) + (mh1.data.get(p1)[0] * (i+1) + mh1.data.get(p1)[1]);
+                b2 = (mh2.data.get(p2)[0] * i + mh2.data.get(p2)[1]) + (mh2.data.get(p2)[0] * (i+1) + mh2.data.get(p2)[1]);
+                distance += trapDif(b1, b2, 1);
+
+            }
+
+        }
+
+        return distance; 
+    }
     public static void main(String[] args){
         // Loading histogram:
         int [] hist = loadHist();
-        
-        // Calculating the Metric Histogram:]
+        int [] hist1 = loadHist();
+        hist1[0] = 195;
+
+        // Calculating the Metric Histogram:
         MetricHist mh = new MetricHist(hist);
-        mh.saveMetricHist();
-        
+        MetricHist mh1 = new MetricHist(hist1);
+        System.out.println(distance(mh, mh1));
+        //mh1.saveMetricHist();
 
     }
 }
