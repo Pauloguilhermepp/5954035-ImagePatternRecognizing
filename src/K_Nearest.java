@@ -34,7 +34,6 @@ public class K_Nearest implements PlugInFilter {
         SaveDialog sd = new SaveDialog("Open search folder...", "any file (required)", "");
         if (sd.getFileName()==null) return;
         String dir = sd.getDirectory();
-
         search(dir);
     }
 
@@ -96,7 +95,8 @@ public class K_Nearest implements PlugInFilter {
                     image.show();
                     
                     image = rbgToGrayScale(image);
-                    getHistogram(image);
+                    MetricHist mh = new MetricHist(getHistogram(image));
+                    mh.saveMetricHist();
 
                 }
             }
