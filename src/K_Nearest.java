@@ -73,7 +73,7 @@ public class K_Nearest implements PlugInFilter {
 
         histString += "]";
 
-        write(histString);
+        //write(histString);
 
         return hist;
     } 
@@ -96,7 +96,7 @@ public class K_Nearest implements PlugInFilter {
                     
                     image = rbgToGrayScale(image);
                     MetricHist mh = new MetricHist(getHistogram(image));
-                    mh.saveMetricHist();
+                    mh.saveMetricHist(dir+list[i]);
 
                 }
             }

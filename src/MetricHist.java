@@ -7,9 +7,13 @@ public class MetricHist{
 
     public MetricHist(int[] hist){
         loadMetricHist(hist);
-
     }
+
     
+    public MetricHist(Vector<double []> dt){
+        data = dt;
+    }
+
     private static double[] getCoef(double x1, double y1, double x2, double y2){
         double [] coef = new double[2];
         coef[0] = (y1 - y2) / (x1 - x2);
@@ -63,7 +67,7 @@ public class MetricHist{
         String metricHistStr = "[";
 
         for(int i = 0; i < data.size(); i++){
-            metricHistStr += Arrays.toString(data.get(i)) + ",";
+            metricHistStr += Arrays.toString(data.get(i)) + ";";
         }
         
         metricHistStr = metricHistStr.substring(0, metricHistStr.length() - 1);
@@ -73,11 +77,11 @@ public class MetricHist{
     }
 
     
-    public void saveMetricHist(){
-        String metricHistStr = toString();
+    public void saveMetricHist(String text){
+        text += ":" + toString() + "\n";
         try {
             FileWriter myWriter = new FileWriter("MetricHistograms.txt", true);
-            myWriter.write(metricHistStr + "\n");
+            myWriter.write(text);
             myWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
