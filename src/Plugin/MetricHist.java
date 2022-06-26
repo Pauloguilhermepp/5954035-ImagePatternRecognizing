@@ -77,10 +77,13 @@ public class MetricHist{
     }
 
     
-    public void saveMetricHist(String text){
+    public void saveMetricHist(String text, int append){
+        boolean appendMode = (append != 0);
+        String file = "MetricHistograms.txt";
         text += ":" + toString() + "\n";
+        
         try {
-            FileWriter myWriter = new FileWriter("MetricHistograms.txt", true);
+            FileWriter myWriter = new FileWriter(file, appendMode);
             myWriter.write(text);
             myWriter.close();
         } catch (IOException e) {
