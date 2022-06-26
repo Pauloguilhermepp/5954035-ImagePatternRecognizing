@@ -39,7 +39,7 @@ public class Image implements Comparable<Image>{
     }
 
     public int compareTo(Image img) {
-        return Integer.compare((int)(getDist()), (int)(img.getDist()));
+        return Double.compare((getDist()), (img.getDist()));
     }
 
     public void strToVector(){
