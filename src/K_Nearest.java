@@ -1,6 +1,4 @@
-/*Exemplo plugin para k-nearest
-   Prof. Joaquim Felipe */
-
+import java.util.*;
 import java.io.*;
 import ij.*;
 import ij.io.*;
@@ -9,101 +7,116 @@ import ij.gui.*;
 import ij.plugin.filter.*;
 
 public class K_Nearest implements PlugInFilter {
-    ImagePlus reference;        // Reference image
-    int k;                      // Number of nearest neighbors
-    int level;                  // Wavelet decoposition level
+    private static ImagePlus reference;        // Image reference
+    private static int k;                      // Number of nearest neighbors
+    private static Vector<Image> imagesDataBase = new Vector <Image>();
 
     public int setup(String arg, ImagePlus imp) {
         reference = imp;
-        ImageConverter ic = new ImageConverter(imp);
-        ic.convertToGray8();
         return DOES_ALL;
+    }
+
+    public boolean dialog(){
+        GenericDialog gd = new GenericDialog("k-nearest neighbor search", IJ.getInstance());
+        gd.addNumericField("Number of nearest neighbors (K):", 5, 0);
+        gd.showDialog();
+        
+        if (gd.wasCanceled())
+            return false;
+        
+        k = (int) gd.getNextNumber();
+
+        return true;
     }
 
     public void run(ImageProcessor img) {
 
-        GenericDialog gd = new GenericDialog("k-nearest neighbor search", IJ.getInstance());
-        gd.addNumericField("Number of nearest neighbors (K):", 1, 0);
-        gd.addNumericField("Wavelet decomposition level:", 1, 0);
-        gd.showDialog();
-        if (gd.wasCanceled())
-            return;
-        k = (int) gd.getNextNumber();
-        level = (int) gd.getNextNumber();
+        if(!dialog()) return;
 
-        SaveDialog sd = new SaveDialog("Open search folder...", "any file (required)", "");
-        if (sd.getFileName()==null) return;
-        String dir = sd.getDirectory();
-        search(dir);
+        showKNN();
+
     }
 
-    public static ImagePlus rbgToGrayScale(ImagePlus img){
-        ImageConverter ic = new ImageConverter(img);
-        ic.convertToGray8();
-        img.updateAndDraw();
+	private static Vector<double []> strToVector(String mhStr){
+		double [] doubleArray;
+		String [] tempArrayStr, arrayStr = mhStr.split(";");
+		Vector<double []> data = new Vector<double []>();
+		
+		for(int i = 0; i < arrayStr.length; i++){
+			if(i == 0){
+				tempArrayStr = arrayStr[i].split(",");
+				tempArrayStr[0] = tempArrayStr[0].substring(2, tempArrayStr[0].length());
+				tempArrayStr[2] = tempArrayStr[2].substring(0, tempArrayStr[2].length() - 1);
+				double [] tempDouble = {Double.parseDouble(tempArrayStr[0]), Double.parseDouble(tempArrayStr[1]), Double.parseDouble(tempArrayStr[2])};
+				data.add(tempDouble);
+				continue;
+			}else if(i == arrayStr.length - 1){
+				tempArrayStr = arrayStr[i].split(",");
+				tempArrayStr[0] = tempArrayStr[0].substring(1, tempArrayStr[0].length());
+				tempArrayStr[2] = tempArrayStr[2].substring(0, tempArrayStr[2].length() - 2);
+				double [] tempDouble = {Double.parseDouble(tempArrayStr[0]), Double.parseDouble(tempArrayStr[1]), Double.parseDouble(tempArrayStr[2])};
+				data.add(tempDouble);
+				continue;
+			}
 
-        return img;
-    }
+			tempArrayStr = arrayStr[i].split(",");
+			tempArrayStr[0] = tempArrayStr[0].substring(1, tempArrayStr[0].length());
+			tempArrayStr[2] = tempArrayStr[2].substring(0, tempArrayStr[2].length() - 1);
+			double [] tempDouble = {Double.parseDouble(tempArrayStr[0]), Double.parseDouble(tempArrayStr[1]), Double.parseDouble(tempArrayStr[2])};
+			data.add(tempDouble);
+		}
 
-    public static void write(String content){
+		return data;
+	}
+
+	private static void loadImagesDataBase(MetricHist mh1){
+		String [] array = new String[2];
+
+        
+        File file = new File("MetricHistograms.txt");
+        
         try {
-            FileWriter myWriter = new FileWriter("Debugger.txt", true);
-            myWriter.write(content + "\n");
-            myWriter.close();
-        } catch (IOException e) {
+            BufferedReader br
+                = new BufferedReader(new FileReader(file));
+
+            String st;
+            while ((st = br.readLine()) != null){
+                // Reading line:
+                Image img = new Image();
+                array = st.split(":");
+                img.imageName = array[0];
+                img.mhStr = array[1];
+
+                // Saving metric histogram:
+                img.mh = new MetricHist(strToVector(img.mhStr));
+                img.dist = MetricHist.distance(img.mh, mh1);
+                imagesDataBase.add(img);
+            }
+        }catch (IOException e) {
             e.printStackTrace();
         }
-    }
 
-    public static int[] getHistogram(ImagePlus img){
-        String histString = "[";
-        int [] hist = new int[256];
-        int nx = img.getWidth(); 
-		int ny = img.getHeight();
+	}
+	
+	private static void showKNN(){
+		// Loading comparative image
+        ImagePlus image = new Opener().openImage(reference.getOriginalFileInfo().directory, 
+                                                 reference.getOriginalFileInfo().fileName);
 
-        for(int i = 0; i < nx; i++){
-            for(int j = 0; j < ny; j++){
-                hist[img.getPixel(i, j)[0]]++;
-            }
-        }
-        
-        for(int i = 0; i < 256; i++){
-            histString += Integer.toString(hist[i]) + ", ";
-        }
+        int [] hist = Utils.getHistogram(image);
+		MetricHist mh1 = new MetricHist(hist);
 
-        histString += "]";
+		// Reading text file
+		loadImagesDataBase(mh1);
 
-        //write(histString);
+		// Sorting images
+		Collections.sort(imagesDataBase);
 
-        return hist;
-    } 
+		// Showing K nearest neighbors
+		for(int i = 0;  i < k; i++){
+			ImagePlus img = new Opener().openImage(imagesDataBase.get(i).imageName);
+			img.show();
+		}
 
-    public void search(String dir) {
-        IJ.log("");
-        IJ.log("Searching images");
-        if (!dir.endsWith(File.separator))
-            dir += File.separator;
-        String[] list = new File(dir).list();  /* lista de arquivos */
-        if (list==null) return;
-        for (int i=0; i<list.length; i++) {
-            IJ.showStatus(i+"/"+list.length+": "+list[i]);   /* mostra na interface */
-            IJ.showProgress((double)i / list.length);  /* barra de progresso */
-            File f = new File(dir+list[i]);
-            if (!f.isDirectory()) {
-                ImagePlus image = new Opener().openImage(dir, list[i]); /* abre imagem image */
-                if (image != null) {
-                    image.show();
-                    
-                    image = rbgToGrayScale(image);
-                    MetricHist mh = new MetricHist(getHistogram(image));
-                    mh.saveMetricHist(dir+list[i]);
-
-                }
-            }
-        }
-
-        
-        IJ.showProgress(1.0);
-        IJ.showStatus("");      
-     }      
+	}
 }
