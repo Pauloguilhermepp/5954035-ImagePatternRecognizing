@@ -37,38 +37,6 @@ public class K_Nearest implements PlugInFilter {
 
     }
 
-	private static Vector<double []> strToVector(String mhStr){
-		double [] doubleArray;
-		String [] tempArrayStr, arrayStr = mhStr.split(";");
-		Vector<double []> data = new Vector<double []>();
-		
-		for(int i = 0; i < arrayStr.length; i++){
-			if(i == 0){
-				tempArrayStr = arrayStr[i].split(",");
-				tempArrayStr[0] = tempArrayStr[0].substring(2, tempArrayStr[0].length());
-				tempArrayStr[2] = tempArrayStr[2].substring(0, tempArrayStr[2].length() - 1);
-				double [] tempDouble = {Double.parseDouble(tempArrayStr[0]), Double.parseDouble(tempArrayStr[1]), Double.parseDouble(tempArrayStr[2])};
-				data.add(tempDouble);
-				continue;
-			}else if(i == arrayStr.length - 1){
-				tempArrayStr = arrayStr[i].split(",");
-				tempArrayStr[0] = tempArrayStr[0].substring(1, tempArrayStr[0].length());
-				tempArrayStr[2] = tempArrayStr[2].substring(0, tempArrayStr[2].length() - 2);
-				double [] tempDouble = {Double.parseDouble(tempArrayStr[0]), Double.parseDouble(tempArrayStr[1]), Double.parseDouble(tempArrayStr[2])};
-				data.add(tempDouble);
-				continue;
-			}
-
-			tempArrayStr = arrayStr[i].split(",");
-			tempArrayStr[0] = tempArrayStr[0].substring(1, tempArrayStr[0].length());
-			tempArrayStr[2] = tempArrayStr[2].substring(0, tempArrayStr[2].length() - 1);
-			double [] tempDouble = {Double.parseDouble(tempArrayStr[0]), Double.parseDouble(tempArrayStr[1]), Double.parseDouble(tempArrayStr[2])};
-			data.add(tempDouble);
-		}
-
-		return data;
-	}
-
 	private static void loadImagesDataBase(MetricHist mh1){
 		String [] array = new String[2];
 
@@ -84,12 +52,12 @@ public class K_Nearest implements PlugInFilter {
                 // Reading line:
                 Image img = new Image();
                 array = st.split(":");
-                img.imageName = array[0];
-                img.mhStr = array[1];
+                img.setImageName(array[0]);
+                img.setMhStr(array[1]);
 
                 // Saving metric histogram:
-                img.mh = new MetricHist(strToVector(img.mhStr));
-                img.dist = MetricHist.distance(img.mh, mh1);
+                img.strToVector();
+                img.setDist(MetricHist.distance(img.getMh(), mh1));
                 imagesDataBase.add(img);
             }
         }catch (IOException e) {
@@ -114,7 +82,7 @@ public class K_Nearest implements PlugInFilter {
 
 		// Showing K nearest neighbors
 		for(int i = 0;  i < k; i++){
-			ImagePlus img = new Opener().openImage(imagesDataBase.get(i).imageName);
+			ImagePlus img = new Opener().openImage(imagesDataBase.get(i).getImageName());
 			img.show();
 		}
 
