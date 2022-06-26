@@ -7,9 +7,11 @@ import ij.gui.*;
 import ij.plugin.filter.*;
 
 public class Utils{
+    // Method to write a message in a debugger file
     public static void write(String content){
+        String file = "Debugger.txt";
         try {
-            FileWriter myWriter = new FileWriter("Debugger.txt", true);
+            FileWriter myWriter = new FileWriter(file, true);
             myWriter.write(content + "\n");
             myWriter.close();
         } catch (IOException e) {
@@ -17,6 +19,7 @@ public class Utils{
         }
     }
 
+    // Get metric histogram of an image
     public static int[] getHistogram(ImagePlus img){
         String histString = "[";
         int [] hist = new int[256];

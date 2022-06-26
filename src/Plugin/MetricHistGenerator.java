@@ -8,7 +8,8 @@ import ij.plugin.filter.*;
 public class MetricHistGenerator implements PlugInFilter {
     private static ImagePlus reference;        // Image reference
     private static int k;                      // Number of nearest neighbors
-
+    
+    // Convert image to grayscale:
     public int setup(String arg, ImagePlus imp) {
         reference = imp;
         ImageConverter ic = new ImageConverter(imp);
@@ -16,24 +17,18 @@ public class MetricHistGenerator implements PlugInFilter {
         return DOES_ALL;
     }
 
+    // Open dialog box and call evaluate function
     public void run(ImageProcessor img) {
 
         SaveDialog sd = new SaveDialog("Open the folder to be evaluated", "Any file (required)", "");
         if (sd.getFileName() == null) return;
 
         String dir = sd.getDirectory();
-        search(dir);
+        evaluate(dir);
     }
 
-    private static ImagePlus rbgToGrayScale(ImagePlus img){
-        ImageConverter ic = new ImageConverter(img);
-        ic.convertToGray8();
-        img.updateAndDraw();
-
-        return img;
-    } 
-
-    private void search(String dir) {
+    // Create the metric histogram of each image
+    private void evaluate(String dir) {
         IJ.log("Evaluating images");
 
         if (!dir.endsWith(File.separator))
@@ -41,7 +36,7 @@ public class MetricHistGenerator implements PlugInFilter {
         
         String[] list = new File(dir).list();  /* Files list */
         
-        if (list==null) return;
+        if (list == null) return;
         
         for (int i = 0; i < list.length; i++) {
 
@@ -53,14 +48,7 @@ public class MetricHistGenerator implements PlugInFilter {
             if (!f.isDirectory()) {
                 
                 ImagePlus image = new Opener().openImage(dir, list[i]); /* Open a image */
-                
-                if (image != null) {
-                    
-                    image = rbgToGrayScale(image); // Convert image to grayscale
-                    MetricHist mh = new MetricHist(Utils.getHistogram(image)); // Calculate the image metric histogram
-                    mh.saveMetricHist(dir + list[i], i);// Save image metric histogram
-
-                }
+                MetricHist.evaluateImage(image, dir + list[i], i);
 
             }
 

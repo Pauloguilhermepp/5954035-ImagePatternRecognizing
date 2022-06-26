@@ -1,19 +1,47 @@
 import java.util.*;
 import java.io.*;
+import ij.*;
+import ij.io.*;
+import ij.process.*;
+import ij.gui.*;
+import ij.plugin.filter.*;
+
 public class MetricHist{
 
     private double maxError = 2000;
     private Vector<double []> data = new Vector<double []>();
 
+    // Create the metric histogram using a histogram
     public MetricHist(int[] hist){
         loadMetricHist(hist);
     }
-
     
-    public MetricHist(Vector<double []> dt){
-        data = dt;
+    // Create the metric histogram using a metric histogram vector
+    public MetricHist(Vector<double []> Data){
+        setData(Data);
     }
 
+    // Get maxError
+    public double getMaxError(){
+        return maxError;
+    }
+
+    // Get metric histogram vector
+    public Vector<double []> getData(){
+        return data;
+    }
+
+    // Set maxError
+    public void setMaxError(double MaxError){
+        maxError = MaxError;
+    }
+
+    // Set metric histogram vector
+    public void setData(Vector<double []> Data){
+        data = Data;
+    }
+
+    // Get coeficientes of a first order polinomial
     private static double[] getCoef(double x1, double y1, double x2, double y2){
         double [] coef = new double[2];
         coef[0] = (y1 - y2) / (x1 - x2);
@@ -22,13 +50,8 @@ public class MetricHist{
         return coef;
     }
 
-    public static int [] loadHist(){
-        int [] hist = {194, 391, 370, 379, 352, 216, 353, 362, 244, 287, 268, 402, 290, 305, 279, 478, 274, 300, 323, 311, 302, 330, 340, 353, 164, 330, 358, 203, 338, 346, 353, 166, 415, 214, 396, 231, 201, 413, 222, 238, 475, 224, 252, 237, 216, 463, 228, 253, 268, 259, 285, 196, 290, 285, 267, 314, 286, 304, 322, 282, 286, 314, 319, 304, 0, 321, 308, 306, 294, 341, 0, 331, 333, 388, 0, 360, 329, 0, 371, 409, 0, 397, 377, 0, 420, 405, 0, 387, 426, 0, 421, 0, 436, 0, 457, 440, 0, 428, 0, 434, 0, 483, 0, 524, 0, 516, 0, 474, 0, 557, 0, 517, 0, 459, 0, 524, 0, 538, 0, 576, 0, 549, 0, 0, 584, 0, 547, 0, 576, 0, 582, 0, 0, 579, 0, 0, 591, 0, 552, 0, 0, 623, 0, 601, 0, 632, 0, 0, 614, 0, 628, 0, 0, 661, 0, 0, 687, 0, 645, 0, 0, 684, 0, 0, 632, 0, 0, 750, 0, 677, 0, 0, 687, 0, 0, 712, 0, 0, 653, 0, 0, 713, 0, 0, 714, 0, 0, 615, 0, 0, 786, 0, 0, 698, 0, 0, 642, 0, 0, 718, 0, 0, 733, 0, 0, 672, 0, 0, 668, 0, 0, 628, 0, 0, 732, 0, 0, 676, 0, 0, 620, 0, 586, 0, 0, 593, 0, 565, 0, 0, 594, 0, 509, 0, 0, 547, 0, 486, 0, 478, 0, 445, 0, 395, 0, 435, 367, 0, 324, 298, 263, 230, 217, 182, 335, 119};
-        return hist;
-    }
-
-    
-    public void loadMetricHist(int[] hist){
+    // Find metric histogram by usual histogram
+    private void loadMetricHist(int[] hist){
         int start = 0, end = 0;
         double aBin = 0, aSum = 0;
         boolean startNewBin = false;
@@ -46,23 +69,24 @@ public class MetricHist{
 
             aSum += (hist[end] + hist[end + 1]) / 2.0;
 
-            if(Math.abs(aBin - aSum) > maxError){
+            if(Math.abs(aBin - aSum) > getMaxError()){
                 double [] coefs = getCoef(start, hist[start], end, hist[end]);
                 double [] array = {coefs[0], coefs[1], end};
-                this.data.add(array);
+                data.add(array);
                 startNewBin = true;
             }
 
         }
 
-        if(this.data.get(this.data.size() - 1)[2] != 255){
+        if(data.get(data.size() - 1)[2] != 255){
             double [] coefs = getCoef(start, hist[start], 255, hist[255]);
             double [] array = {coefs[0], coefs[1], 255};
-            this.data.add(array);
+            data.add(array);
         }
         
     }
 
+    // Pass metric histogram vector to string
     public String toString(){
         String metricHistStr = "[";
 
@@ -76,10 +100,9 @@ public class MetricHist{
         return metricHistStr;
     }
 
-    
-    public void saveMetricHist(String text, int append){
+    // Save metric histogram vector in a text file
+    public void saveMetricHist(String text, String file, int append){
         boolean appendMode = (append != 0);
-        String file = "MetricHistograms.txt";
         text += ":" + toString() + "\n";
         
         try {
@@ -90,11 +113,33 @@ public class MetricHist{
             e.printStackTrace();
         }
     }
+
+    // Change image to grayscale
+    private static ImagePlus rbgToGrayScale(ImagePlus img){
+        ImageConverter ic = new ImageConverter(img);
+        ic.convertToGray8();
+        img.updateAndDraw();
+
+        return img;
+    } 
+
+    // Calculate the metric histogram of an image
+    public static void evaluateImage(ImagePlus image, String imageName, int append){
+        if (image == null) return;
+
+        image = rbgToGrayScale(image); // Convert image to grayscale
+        MetricHist mh = new MetricHist(Utils.getHistogram(image)); // Calculate the image metric histogram
+        String file = "MetricHistograms.txt";
+        mh.saveMetricHist(imageName, file, append);// Save image metric histogram
+
+    }
     
+    // Detects the intersection in a range of two lines
     private static boolean inters(double x1, double x2, double a1, double b1, double a2, double b2){
         if(a1 == a2){
             return false;
         }
+        
         double x = (b2 - b1) / (a1 - a2);
 
         if(x1 < x && x < x2){
@@ -104,10 +149,13 @@ public class MetricHist{
         return false;
 
     }
+
+    // Calculate the difference of two trapezoids of same base:
     private static double trapDif(double b1, double b2, double h){
         return Math.abs(b1 - b2) * h / 2;
     }
 
+    // Calculate the distance between two metric histograms:
     public static double distance(MetricHist mh1, MetricHist mh2){
         int p1 = 0, p2 = 0;
         double distance = 0, b1, b2, x;
@@ -147,17 +195,5 @@ public class MetricHist{
 
         return distance; 
     }
-    public static void main(String[] args){
-        // Loading histogram:
-        int [] hist = loadHist();
-        int [] hist1 = loadHist();
-        hist1[0] = 195;
 
-        // Calculating the Metric Histogram:
-        MetricHist mh = new MetricHist(hist);
-        MetricHist mh1 = new MetricHist(hist1);
-        System.out.println(distance(mh, mh1));
-        //mh1.saveMetricHist();
-
-    }
 }
